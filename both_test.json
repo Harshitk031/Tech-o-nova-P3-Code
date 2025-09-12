@@ -1,0 +1,137 @@
+{
+  "postgresql": {
+    "query": "SELECT * FROM orders WHERE customer_id = 42;",
+    "sql_features": {
+      "where_columns": [
+        "customer_id"
+      ],
+      "query_type": "SELECT",
+      "table_name": "orders"
+    },
+    "plan_data": {
+      "Node Type": "Seq Scan",
+      "Relation Name": "orders",
+      "Total Cost": 1887.0,
+      "Plan Rows": 98,
+      "Actual Rows": 99,
+      "Rows Removed by Filter": 99901
+    },
+    "unused_indexes": [
+      {
+        "database": "postgresql",
+        "table_name": "orders",
+        "index_name": "orders_pkey",
+        "times_used": 0,
+        "index_size": "2208 kB",
+        "type": "UNUSED_INDEX_CANDIDATE"
+      }
+    ],
+    "recommendations": [
+      {
+        "rule_id": "MISSING_INDEX_001",
+        "type": "MISSING_INDEX",
+        "severity": "HIGH",
+        "table": "orders",
+        "columns": [
+          "customer_id"
+        ],
+        "rationale": "Sequential scan on 'orders' with WHERE clause on customer_id. Cost: 1887.00, Rows: 99",
+        "evidence": {
+          "node_type": "Seq Scan",
+          "total_cost": 1887.0,
+          "actual_rows": 99,
+          "filtered_columns": [
+            "customer_id"
+          ]
+        },
+        "suggested_action": "CREATE INDEX idx_orders_customer_id ON orders (customer_id);",
+        "caveats": [
+          "Verify index effectiveness with HypoPG before production",
+          "Consider index maintenance overhead",
+          "Monitor query performance after implementation"
+        ],
+        "estimated_impact": "Expected -10% performance improvement",
+        "confidence": 1.0,
+        "impact": "High"
+      },
+      {
+        "rule_id": "UNUSED_INDEX_001",
+        "type": "UNUSED_INDEX_CANDIDATE",
+        "severity": "MEDIUM",
+        "table": "orders",
+        "index_name": "orders_pkey",
+        "rationale": "The index 'orders_pkey' on table 'orders' has been used 0 times. It may be a candidate for removal to save space (2208 kB) and improve write performance.",
+        "evidence": {
+          "database": "postgresql",
+          "table_name": "orders",
+          "index_name": "orders_pkey",
+          "times_used": 0
+        },
+        "suggested_action": "DROP INDEX orders_pkey;",
+        "caveats": [
+          "Please verify this index is not used for infrequent but important queries (e.g., annual reports) before dropping it.",
+          "Consider monitoring the application for any performance degradation after removal.",
+          "Backup the database before making schema changes."
+        ],
+        "estimated_impact": "Medium - Reduces storage overhead and improves write performance",
+        "confidence": 0.3,
+        "impact": "High"
+      }
+    ],
+    "summary": {
+      "total_recommendations": 2,
+      "unused_indexes_count": 1,
+      "high_severity": 1,
+      "medium_severity": 1,
+      "low_severity": 0
+    }
+  },
+  "mysql": {
+    "query": "SELECT * FROM orders WHERE customer_id = 42;",
+    "sql_features": {
+      "where_columns": [
+        "customer_id"
+      ],
+      "query_type": "SELECT",
+      "table_name": "orders"
+    },
+    "plan_data": {
+      "Node Type": "ALL",
+      "Relation Name": "orders",
+      "Total Cost": 1000.0,
+      "Plan Rows": 100000,
+      "Actual Rows": 99,
+      "Rows Removed by Filter": 99901
+    },
+    "unused_indexes": [],
+    "recommendations": [
+      {
+        "rule_id": "MISSING_STATS_001",
+        "type": "MISSING_STATISTICS",
+        "severity": "MEDIUM",
+        "rationale": "Significant estimation error: planned 100000 rows, actual 99 rows (99.9% error)",
+        "evidence": {
+          "planned_rows": 100000,
+          "actual_rows": 99,
+          "estimation_error": 0.99901
+        },
+        "suggested_action": "Run ANALYZE to update table statistics",
+        "caveats": [
+          "Statistics affect query planning",
+          "Run during low-traffic periods",
+          "Monitor performance after update"
+        ],
+        "estimated_impact": "Improved query planning accuracy",
+        "confidence": 0.3,
+        "impact": "High"
+      }
+    ],
+    "summary": {
+      "total_recommendations": 1,
+      "unused_indexes_count": 0,
+      "high_severity": 0,
+      "medium_severity": 1,
+      "low_severity": 0
+    }
+  }
+}

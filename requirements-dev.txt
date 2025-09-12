@@ -1,0 +1,33 @@
+# Development requirements for Database Performance Analysis Tool
+# Install with: pip install -r requirements-dev.txt
+
+# Include all production requirements
+-r requirements.txt
+
+# Development tools
+pytest==8.3.4
+pytest-cov==6.0.0
+pytest-mock==3.14.0
+
+# Code formatting and linting
+black==24.10.0
+flake8==7.1.1
+isort==5.13.2
+mypy==1.13.0
+
+# Documentation
+sphinx==7.3.7
+sphinx-rtd-theme==3.1.1
+sphinx-autodoc-typehints==2.6.0
+
+# Jupyter notebooks for analysis
+jupyter==1.0.0
+ipykernel==6.29.5
+
+# Performance profiling
+memory-profiler==0.61.0
+line-profiler==4.1.3
+
+# Security scanning
+bandit==1.7.10
+safety==3.2.0

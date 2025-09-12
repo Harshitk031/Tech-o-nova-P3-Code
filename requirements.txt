@@ -1,0 +1,43 @@
+# Database Performance Analysis Tool - Requirements
+# Core dependencies for database connectivity and analysis
+
+# PostgreSQL connectivity
+psycopg2-binary==2.9.9
+
+# MySQL connectivity  
+mysql-connector-python==9.4.0
+
+# SQL parsing and analysis
+sqlglot==25.0.0
+
+# Data processing and analysis
+pandas==2.2.2
+numpy==1.26.4
+
+# JSON handling (built-in, but explicit for clarity)
+# json - built-in module
+
+# Type hints support
+typing-extensions==4.12.2
+
+# Optional: Enhanced logging and monitoring
+colorama==0.4.6
+
+# Optional: Progress bars for long operations
+tqdm==4.66.4
+
+# Optional: Configuration management
+pyyaml==6.0.2
+
+# Optional: Enhanced CLI experience
+click==8.1.7
+
+# Development and testing dependencies (optional)
+pytest==8.3.4
+pytest-cov==6.0.0
+black==24.10.0
+flake8==7.1.1
+
+# Documentation dependencies (optional)
+sphinx==7.3.7
+sphinx-rtd-theme==3.1.1

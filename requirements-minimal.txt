@@ -1,0 +1,9 @@
+# Minimal requirements for Database Performance Analysis Tool
+# Only essential dependencies for core functionality
+
+# Database connectivity
+psycopg2-binary==2.9.9
+mysql-connector-python==9.4.0
+
+# SQL parsing
+sqlglot==25.0.0

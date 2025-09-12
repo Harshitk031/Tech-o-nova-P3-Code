@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Performance Monitor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .hero-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 80px 0;
+            margin-bottom: 50px;
+        }
+        .feature-card {
+            transition: transform 0.3s ease;
+            height: 100%;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .metric-value {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .metric-label {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-online { background-color: #28a745; }
+        .status-warning { background-color: #ffc107; }
+        .status-offline { background-color: #dc3545; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-database"></i> DB Performance Monitor
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/dashboard">Dashboard</a>
+                <a class="nav-link" href="/alerts">Alerts</a>
+                <a class="nav-link" href="/configuration">Configuration</a>
+                <a class="nav-link" href="/schema">Schema</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="hero-section">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <h1 class="display-4 fw-bold mb-4">Database Performance Monitor</h1>
+                    <p class="lead mb-4">
+                        Comprehensive database performance analysis, monitoring, and optimization tools.
+                        Get real-time insights into your PostgreSQL and MySQL databases.
+                    </p>
+                    <div class="d-flex gap-3">
+                        <a href="/dashboard" class="btn btn-light btn-lg">
+                            <i class="fas fa-chart-line"></i> View Dashboard
+                        </a>
+                        <a href="/alerts" class="btn btn-outline-light btn-lg">
+                            <i class="fas fa-bell"></i> Check Alerts
+                        </a>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="metric-card">
+                                <div class="metric-value" id="totalQueries">-</div>
+                                <div class="metric-label">Total Queries</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="metric-card">
+                                <div class="metric-value" id="activeAlerts">-</div>
+                                <div class="metric-label">Active Alerts</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="container">
+        <div class="row mb-5">
+            <div class="col-12 text-center">
+                <h2 class="mb-4">Key Features</h2>
+                <p class="lead text-muted">Comprehensive database performance monitoring and analysis</p>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-5">
+            <div class="col-md-4">
+                <div class="card feature-card h-100">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-chart-line fa-3x text-primary"></i>
+                        </div>
+                        <h5 class="card-title">Performance Monitoring</h5>
+                        <p class="card-text">
+                            Real-time monitoring of query performance, execution times, and database metrics.
+                        </p>
+                        <a href="/dashboard" class="btn btn-primary">View Dashboard</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card feature-card h-100">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-bell fa-3x text-warning"></i>
+                        </div>
+                        <h5 class="card-title">Smart Alerting</h5>
+                        <p class="card-text">
+                            Intelligent alerts for performance regressions, configuration issues, and critical problems.
+                        </p>
+                        <a href="/alerts" class="btn btn-warning">View Alerts</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card feature-card h-100">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-cog fa-3x text-info"></i>
+                        </div>
+                        <h5 class="card-title">Configuration Analysis</h5>
+                        <p class="card-text">
+                            Analyze database configuration settings and get optimization recommendations.
+                        </p>
+                        <a href="/configuration" class="btn btn-info">Analyze Config</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-5">
+            <div class="col-md-4">
+                <div class="card feature-card h-100">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-table fa-3x text-success"></i>
+                        </div>
+                        <h5 class="card-title">Schema Analysis</h5>
+                        <p class="card-text">
+                            Identify schema anti-patterns and optimization opportunities in your database design.
+                        </p>
+                        <a href="/schema" class="btn btn-success">Analyze Schema</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card feature-card h-100">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-history fa-3x text-secondary"></i>
+                        </div>
+                        <h5 class="card-title">Historical Analysis</h5>
+                        <p class="card-text">
+                            Track performance trends over time and detect regressions with historical data.
+                        </p>
+                        <a href="/dashboard" class="btn btn-secondary">View Trends</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card feature-card h-100">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-lightbulb fa-3x text-warning"></i>
+                        </div>
+                        <h5 class="card-title">Smart Recommendations</h5>
+                        <p class="card-text">
+                            Get actionable recommendations for index optimization, query tuning, and performance improvements.
+                        </p>
+                        <a href="/dashboard" class="btn btn-warning">Get Recommendations</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Status Section -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-heartbeat"></i> System Status</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="d-flex align-items-center">
+                                    <span class="status-indicator status-online"></span>
+                                    <span>PostgreSQL</span>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="d-flex align-items-center">
+                                    <span class="status-indicator status-online"></span>
+                                    <span>MySQL</span>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="d-flex align-items-center">
+                                    <span class="status-indicator status-online"></span>
+                                    <span>Historical DB</span>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="d-flex align-items-center">
+                                    <span class="status-indicator status-online"></span>
+                                    <span>Web Application</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions Section -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-bolt"></i> Quick Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <button class="btn btn-outline-primary w-100" onclick="runHealthCheck()">
+                                    <i class="fas fa-stethoscope"></i> Run Health Check
+                                </button>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <button class="btn btn-outline-success w-100" onclick="refreshData()">
+                                    <i class="fas fa-sync-alt"></i> Refresh Data
+                                </button>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <button class="btn btn-outline-info w-100" onclick="viewReports()">
+                                    <i class="fas fa-file-alt"></i> View Reports
+                                </button>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <button class="btn btn-outline-warning w-100" onclick="exportData()">
+                                    <i class="fas fa-download"></i> Export Data
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Database Performance Monitor</h6>
+                    <p class="text-muted">Comprehensive database performance analysis and monitoring</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <p class="text-muted">Built with Flask, Bootstrap, and Chart.js</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            loadQuickStats();
+        });
+
+        async function loadQuickStats() {
+            try {
+                // Load performance summary
+                const summaryResponse = await fetch('/api/performance-summary');
+                const summaryData = await summaryResponse.json();
+                
+                if (summaryData.success) {
+                    const queryPerf = summaryData.data.query_performance || {};
+                    document.getElementById('totalQueries').textContent = queryPerf.unique_queries || 0;
+                }
+
+                // Load alerts count
+                const alertsResponse = await fetch('/api/alerts');
+                const alertsData = await alertsResponse.json();
+                
+                if (alertsData.success) {
+                    document.getElementById('activeAlerts').textContent = alertsData.count || 0;
+                }
+
+            } catch (error) {
+                console.error('Error loading quick stats:', error);
+                document.getElementById('totalQueries').textContent = 'N/A';
+                document.getElementById('activeAlerts').textContent = 'N/A';
+            }
+        }
+
+        function runHealthCheck() {
+            window.location.href = '/dashboard';
+        }
+
+        function refreshData() {
+            loadQuickStats();
+        }
+
+        function viewReports() {
+            window.location.href = '/dashboard';
+        }
+
+        function exportData() {
+            alert('Export functionality coming soon!');
+        }
+    </script>
+</body>
+</html>

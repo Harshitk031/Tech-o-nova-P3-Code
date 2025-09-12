@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Configuration Analysis</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .config-card {
+            margin-bottom: 20px;
+        }
+        .setting-item {
+            border-left: 4px solid #e9ecef;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 0 5px 5px 0;
+        }
+        .setting-item.recommended {
+            border-left-color: #28a745;
+        }
+        .setting-item.warning {
+            border-left-color: #ffc107;
+        }
+        .setting-item.danger {
+            border-left-color: #dc3545;
+        }
+        .severity-badge {
+            font-size: 0.8rem;
+        }
+        .loading {
+            text-align: center;
+            padding: 50px;
+        }
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+        .database-tabs {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-database"></i> DB Performance Monitor
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/dashboard">Dashboard</a>
+                <a class="nav-link" href="/alerts">Alerts</a>
+                <a class="nav-link active" href="/configuration">Configuration</a>
+                <a class="nav-link" href="/schema">Schema</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2><i class="fas fa-cog"></i> Configuration Analysis</h2>
+                    <button class="btn btn-primary" onclick="refreshConfiguration()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+
+                <!-- Database Tabs -->
+                <ul class="nav nav-tabs database-tabs" id="databaseTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="postgresql-tab" data-bs-toggle="tab" data-bs-target="#postgresql" type="button" role="tab">
+                            <i class="fas fa-database"></i> PostgreSQL
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="mysql-tab" data-bs-toggle="tab" data-bs-target="#mysql" type="button" role="tab">
+                            <i class="fas fa-database"></i> MySQL
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Tab Content -->
+                <div class="tab-content" id="databaseTabContent">
+                    <!-- PostgreSQL Tab -->
+                    <div class="tab-pane fade show active" id="postgresql" role="tabpanel">
+                        <div id="postgresqlContent">
+                            <div class="loading">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2">Loading PostgreSQL configuration...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MySQL Tab -->
+                    <div class="tab-pane fade" id="mysql" role="tabpanel">
+                        <div id="mysqlContent">
+                            <div class="loading">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2">Loading MySQL configuration...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialize configuration page
+        document.addEventListener('DOMContentLoaded', function() {
+            loadConfiguration();
+        });
+
+        async function loadConfiguration() {
+            try {
+                const response = await fetch('/api/configuration?database=both');
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayConfiguration(data.data);
+                } else {
+                    showError('Failed to load configuration: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Error loading configuration:', error);
+                showError('Failed to load configuration');
+            }
+        }
+
+        function displayConfiguration(configData) {
+            // Display PostgreSQL configuration
+            if (configData.postgresql) {
+                displayDatabaseConfig('postgresql', configData.postgresql);
+            }
+
+            // Display MySQL configuration
+            if (configData.mysql) {
+                displayDatabaseConfig('mysql', configData.mysql);
+            }
+        }
+
+        function displayDatabaseConfig(database, config) {
+            const container = document.getElementById(database + 'Content');
+            
+            if (config.error) {
+                container.innerHTML = `
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-exclamation-triangle"></i> ${config.error}
+                    </div>
+                `;
+                return;
+            }
+
+            const settings = config.settings || {};
+            const recommendations = config.recommendations || [];
+
+            let html = `
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="card config-card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-cog"></i> Current Settings</h5>
+                            </div>
+                            <div class="card-body">
+                                ${Object.entries(settings).map(([key, setting]) => `
+                                    <div class="setting-item">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <h6 class="mb-1">${key}</h6>
+                                                <p class="mb-1 text-muted">${setting.description || 'Configuration setting'}</p>
+                                                <small class="text-muted">
+                                                    Value: <code>${setting.value}</code>
+                                                    ${setting.unit ? ` (${setting.unit})` : ''}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card config-card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-lightbulb"></i> Recommendations</h5>
+                            </div>
+                            <div class="card-body">
+                                ${recommendations.length === 0 ? 
+                                    '<p class="text-muted">No configuration issues found. Your settings look good!</p>' :
+                                    recommendations.map(rec => `
+                                        <div class="setting-item ${getRecommendationClass(rec.severity)}">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <span class="badge severity-badge bg-${getSeverityColor(rec.severity)}">
+                                                    ${rec.severity}
+                                                </span>
+                                            </div>
+                                            <h6 class="mb-1">${rec.setting}</h6>
+                                            <p class="mb-1 text-muted">${rec.issue}</p>
+                                            <p class="mb-1"><strong>Recommendation:</strong> ${rec.recommendation}</p>
+                                            <small class="text-muted">
+                                                <strong>Impact:</strong> ${rec.impact}
+                                            </small>
+                                        </div>
+                                    `).join('')
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        function getRecommendationClass(severity) {
+            const classes = {
+                'HIGH': 'danger',
+                'MEDIUM': 'warning',
+                'LOW': 'recommended'
+            };
+            return classes[severity] || '';
+        }
+
+        function getSeverityColor(severity) {
+            const colors = {
+                'HIGH': 'danger',
+                'MEDIUM': 'warning',
+                'LOW': 'success'
+            };
+            return colors[severity] || 'secondary';
+        }
+
+        function refreshConfiguration() {
+            // Reset loading states
+            document.getElementById('postgresqlContent').innerHTML = `
+                <div class="loading">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading PostgreSQL configuration...</p>
+                </div>
+            `;
+            
+            document.getElementById('mysqlContent').innerHTML = `
+                <div class="loading">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading MySQL configuration...</p>
+                </div>
+            `;
+            
+            loadConfiguration();
+        }
+
+        function showError(message) {
+            document.getElementById('postgresqlContent').innerHTML = `
+                <div class="alert alert-danger" role="alert">
+                    <i class="fas fa-exclamation-triangle"></i> ${message}
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

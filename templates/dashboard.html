@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Performance Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .metric-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        .status-critical { color: #dc3545; }
+        .status-high { color: #fd7e14; }
+        .status-medium { color: #ffc107; }
+        .status-low { color: #28a745; }
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-bottom: 30px;
+        }
+        .table-container {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .loading {
+            text-align: center;
+            padding: 50px;
+        }
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-database"></i> DB Performance Monitor
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/dashboard">Dashboard</a>
+                <a class="nav-link" href="/alerts">Alerts</a>
+                <a class="nav-link" href="/configuration">Configuration</a>
+                <a class="nav-link" href="/schema">Schema</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <!-- Performance Summary Cards -->
+        <div class="row" id="summaryCards">
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <div class="metric-value" id="totalQueries">-</div>
+                    <div class="metric-label">Total Queries</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <div class="metric-value" id="avgExecTime">-</div>
+                    <div class="metric-label">Avg Exec Time (ms)</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <div class="metric-value" id="regressionCount">-</div>
+                    <div class="metric-label">Performance Regressions</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <div class="metric-value" id="alertCount">-</div>
+                    <div class="metric-label">Active Alerts</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-chart-line"></i> Performance Trends</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="performanceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-chart-pie"></i> Query Distribution</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="distributionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Hotspots Table -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5><i class="fas fa-fire"></i> Performance Hotspots</h5>
+                        <button class="btn btn-primary btn-sm" onclick="refreshData()">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="table table-striped table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Query ID</th>
+                                        <th>Database</th>
+                                        <th>Query Text</th>
+                                        <th>Regression %</th>
+                                        <th>Severity</th>
+                                        <th>Avg Time (ms)</th>
+                                        <th>Calls</th>
+                                        <th>Confidence</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="hotspotsTableBody">
+                                    <tr>
+                                        <td colspan="8" class="text-center">
+                                            <div class="loading">
+                                                <div class="spinner-border text-primary" role="status">
+                                                    <span class="visually-hidden">Loading...</span>
+                                                </div>
+                                                <p class="mt-2">Loading performance data...</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let performanceChart, distributionChart;
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboardData();
+            setupCharts();
+            
+            // Auto-refresh every 30 seconds
+            setInterval(loadDashboardData, 30000);
+        });
+
+        async function loadDashboardData() {
+            try {
+                // Load performance summary
+                const summaryResponse = await fetch('/api/performance-summary');
+                const summaryData = await summaryResponse.json();
+                
+                if (summaryData.success) {
+                    updateSummaryCards(summaryData.data);
+                }
+
+                // Load hotspots
+                const hotspotsResponse = await fetch('/api/hotspots');
+                const hotspotsData = await hotspotsResponse.json();
+                
+                if (hotspotsData.success) {
+                    updateHotspotsTable(hotspotsData.data);
+                    updateDistributionChart(hotspotsData.data);
+                }
+
+                // Load alerts count
+                const alertsResponse = await fetch('/api/alerts');
+                const alertsData = await alertsResponse.json();
+                
+                if (alertsData.success) {
+                    document.getElementById('alertCount').textContent = alertsData.count;
+                }
+
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                showError('Failed to load dashboard data');
+            }
+        }
+
+        function updateSummaryCards(data) {
+            const queryPerf = data.query_performance || {};
+            const regressions = data.regression_count || 0;
+            
+            document.getElementById('totalQueries').textContent = 
+                queryPerf.unique_queries || 0;
+            document.getElementById('avgExecTime').textContent = 
+                Math.round(queryPerf.avg_exec_time || 0);
+            document.getElementById('regressionCount').textContent = regressions;
+        }
+
+        function updateHotspotsTable(hotspots) {
+            const tbody = document.getElementById('hotspotsTableBody');
+            
+            if (hotspots.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No performance hotspots found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = hotspots.map(hotspot => `
+                <tr>
+                    <td>${hotspot.query_id || 'N/A'}</td>
+                    <td>${hotspot.database_name || 'N/A'}</td>
+                    <td title="${hotspot.query_text}">${hotspot.query_text}</td>
+                    <td>
+                        <span class="badge ${getRegressionBadgeClass(hotspot.regression_percentage)}">
+                            ${hotspot.regression_percentage.toFixed(1)}%
+                        </span>
+                    </td>
+                    <td>
+                        <span class="status-${hotspot.severity.toLowerCase()}">
+                            <i class="fas fa-circle"></i> ${hotspot.severity}
+                        </span>
+                    </td>
+                    <td>${Math.round(hotspot.avg_exec_time_ms || 0)}</td>
+                    <td>${hotspot.calls || 0}</td>
+                    <td>${(hotspot.confidence * 100).toFixed(0)}%</td>
+                </tr>
+            `).join('');
+        }
+
+        function getRegressionBadgeClass(percentage) {
+            if (percentage > 100) return 'bg-danger';
+            if (percentage > 50) return 'bg-warning';
+            if (percentage > 20) return 'bg-info';
+            return 'bg-success';
+        }
+
+        function setupCharts() {
+            // Performance trends chart
+            const perfCtx = document.getElementById('performanceChart').getContext('2d');
+            performanceChart = new Chart(perfCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Average Execution Time (ms)',
+                        data: [],
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Distribution chart
+            const distCtx = document.getElementById('distributionChart').getContext('2d');
+            distributionChart = new Chart(distCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Low', 'Medium', 'High', 'Critical'],
+                    datasets: [{
+                        data: [0, 0, 0, 0],
+                        backgroundColor: [
+                            '#28a745',
+                            '#ffc107',
+                            '#fd7e14',
+                            '#dc3545'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        function updateDistributionChart(hotspots) {
+            const severityCounts = {
+                'LOW': 0,
+                'MEDIUM': 0,
+                'HIGH': 0,
+                'CRITICAL': 0
+            };
+
+            hotspots.forEach(hotspot => {
+                const severity = hotspot.severity || 'LOW';
+                severityCounts[severity] = (severityCounts[severity] || 0) + 1;
+            });
+
+            distributionChart.data.datasets[0].data = [
+                severityCounts.LOW,
+                severityCounts.MEDIUM,
+                severityCounts.HIGH,
+                severityCounts.CRITICAL
+            ];
+            distributionChart.update();
+        }
+
+        function refreshData() {
+            loadDashboardData();
+        }
+
+        function showError(message) {
+            const tbody = document.getElementById('hotspotsTableBody');
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger">${message}</td></tr>`;
+        }
+    </script>
+</body>
+</html>
