@@ -14,7 +14,7 @@ from typing import List, Dict, Any
 # Add project root to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.config.database_config import get_database_config
+from src.config.database_config import get_database_config, get_historical_postgres_connection_string
 
 class PostgreSQLStatsCollector:
     """Collects PostgreSQL performance statistics."""
@@ -30,10 +30,7 @@ class PostgreSQLStatsCollector:
             f"/{self.db_config.get_postgres_config()['database']}", 
             f"/{target_db_name}"
         )
-        self.historical_conn_str = self.db_config.get_postgres_connection_string().replace(
-            f"/{self.db_config.get_postgres_config()['database']}", 
-            f"/{historical_db_name}"
-        )
+        self.historical_conn_str = get_historical_postgres_connection_string(historical_db_name)
     
     def collect_query_stats(self) -> List[Dict[str, Any]]:
         """Collect query statistics from pg_stat_statements."""

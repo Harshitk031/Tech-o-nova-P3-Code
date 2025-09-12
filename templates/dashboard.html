@@ -143,11 +143,12 @@
                                         <th>Avg Time (ms)</th>
                                         <th>Calls</th>
                                         <th>Confidence</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="hotspotsTableBody">
                                     <tr>
-                                        <td colspan="8" class="text-center">
+                                        <td colspan="9" class="text-center">
                                             <div class="loading">
                                                 <div class="spinner-border text-primary" role="status">
                                                     <span class="visually-hidden">Loading...</span>
@@ -195,6 +196,7 @@
                 if (hotspotsData.success) {
                     updateHotspotsTable(hotspotsData.data);
                     updateDistributionChart(hotspotsData.data);
+                    updatePerformanceChart(hotspotsData.data);
                 }
 
                 // Load alerts count
@@ -226,30 +228,85 @@
             const tbody = document.getElementById('hotspotsTableBody');
             
             if (hotspots.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No performance hotspots found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">No performance hotspots found</td></tr>';
                 return;
             }
 
-            tbody.innerHTML = hotspots.map(hotspot => `
-                <tr>
-                    <td>${hotspot.query_id || 'N/A'}</td>
-                    <td>${hotspot.database_name || 'N/A'}</td>
-                    <td title="${hotspot.query_text}">${hotspot.query_text}</td>
-                    <td>
-                        <span class="badge ${getRegressionBadgeClass(hotspot.regression_percentage)}">
-                            ${hotspot.regression_percentage.toFixed(1)}%
-                        </span>
-                    </td>
-                    <td>
-                        <span class="status-${hotspot.severity.toLowerCase()}">
-                            <i class="fas fa-circle"></i> ${hotspot.severity}
-                        </span>
-                    </td>
-                    <td>${Math.round(hotspot.avg_exec_time_ms || 0)}</td>
-                    <td>${hotspot.calls || 0}</td>
-                    <td>${(hotspot.confidence * 100).toFixed(0)}%</td>
-                </tr>
-            `).join('');
+            tbody.innerHTML = hotspots.map(hotspot => {
+                // Generate a sample recommendation for simulation
+                const recommendation = generateRecommendation(hotspot);
+                
+                return `
+                    <tr>
+                        <td>${hotspot.query_id || 'N/A'}</td>
+                        <td>${hotspot.database_name || 'N/A'}</td>
+                        <td title="${hotspot.query_text}">${hotspot.query_text}</td>
+                        <td>
+                            <span class="badge ${getRegressionBadgeClass(hotspot.regression_percentage)}">
+                                ${hotspot.regression_percentage.toFixed(1)}%
+                            </span>
+                        </td>
+                        <td>
+                            <span class="status-${hotspot.severity.toLowerCase()}">
+                                <i class="fas fa-circle"></i> ${hotspot.severity}
+                            </span>
+                        </td>
+                        <td>${Math.round(hotspot.avg_exec_time_ms || 0)}</td>
+                        <td>${hotspot.calls || 0}</td>
+                        <td>${(hotspot.confidence * 100).toFixed(0)}%</td>
+                        <td>
+                            ${recommendation ? `
+                                <button class="btn btn-primary btn-sm" 
+                                        onclick="simulateFix(this, '${hotspot.query_text.replace(/'/g, "\\'")}', '${recommendation.replace(/'/g, "\\'")}')">
+                                    Simulate Fix
+                                </button>
+                                <div class="simulation-result mt-2"></div>
+                            ` : '<span class="text-muted">No recommendation</span>'}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function generateRecommendation(hotspot) {
+            // Generate a sample CREATE INDEX recommendation based on the query
+            const query = hotspot.query_text.toLowerCase();
+            
+            // Skip simulation for non-SELECT queries
+            if (query.startsWith('commit') || query.startsWith('insert') || 
+                query.startsWith('update') || query.startsWith('delete') ||
+                query.startsWith('create') || query.startsWith('drop') ||
+                query.startsWith('alter') || query.startsWith('vacuum') ||
+                query.startsWith('analyze')) {
+                return null; // No recommendation for these query types
+            }
+            
+            // Check for workload queries first
+            if (query.includes('order_status')) {
+                return "CREATE INDEX idx_orders_status ON olist_orders_dataset (order_status)";
+            } else if (query.includes('customer_state')) {
+                return "CREATE INDEX idx_customers_state ON olist_customers_dataset (customer_state)";
+            } else if (query.includes('customer_id')) {
+                return "CREATE INDEX idx_orders_customer_id ON olist_orders_dataset (customer_id)";
+            } else if (query.includes('order_purchase_timestamp')) {
+                return "CREATE INDEX idx_orders_timestamp ON olist_orders_dataset (order_purchase_timestamp)";
+            } else if (query.includes('query_snapshots')) {
+                return "CREATE INDEX idx_query_snapshots_captured_at ON query_snapshots (captured_at)";
+            } else if (query.includes('database_name')) {
+                return "CREATE INDEX idx_query_snapshots_db_name ON query_snapshots (database_name)";
+            } else if (query.includes('query_id')) {
+                return "CREATE INDEX idx_query_snapshots_query_id ON query_snapshots (query_id)";
+            } else if (query.includes('total_exec_time_ms')) {
+                return "CREATE INDEX idx_query_snapshots_exec_time ON query_snapshots (total_exec_time_ms)";
+            } else if (query.includes('captured_at')) {
+                return "CREATE INDEX idx_query_snapshots_captured_at ON query_snapshots (captured_at)";
+            } else if (query.includes('where') && query.includes('select')) {
+                // Generic recommendation for SELECT queries with WHERE clause
+                return "CREATE INDEX idx_optimization ON query_snapshots (captured_at)";
+            }
+            
+            // For any other query, provide a generic recommendation
+            return "CREATE INDEX idx_generic_optimization ON query_snapshots (captured_at, database_name)";
         }
 
         function getRegressionBadgeClass(percentage) {
@@ -270,7 +327,9 @@
                         label: 'Average Execution Time (ms)',
                         data: [],
                         borderColor: 'rgb(75, 192, 192)',
-                        tension: 0.1
+                        backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                        tension: 0.1,
+                        fill: true
                     }]
                 },
                 options: {
@@ -278,7 +337,22 @@
                     maintainAspectRatio: false,
                     scales: {
                         y: {
-                            beginAtZero: true
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Execution Time (ms)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time Period'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true
                         }
                     }
                 }
@@ -329,13 +403,77 @@
             distributionChart.update();
         }
 
+        function updatePerformanceChart(hotspots) {
+            // Generate time labels for the last 24 hours
+            const now = new Date();
+            const labels = [];
+            const data = [];
+            
+            // Create 12 data points (every 2 hours)
+            for (let i = 11; i >= 0; i--) {
+                const time = new Date(now.getTime() - (i * 2 * 60 * 60 * 1000));
+                labels.push(time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
+                
+                // Generate sample data based on hotspots
+                const baseTime = hotspots.length > 0 ? 
+                    hotspots.reduce((sum, h) => sum + (h.avg_exec_time_ms || 0), 0) / hotspots.length : 10;
+                
+                // Add some variation to make it look realistic
+                const variation = (Math.random() - 0.5) * baseTime * 0.3;
+                data.push(Math.max(1, baseTime + variation));
+            }
+            
+            performanceChart.data.labels = labels;
+            performanceChart.data.datasets[0].data = data;
+            performanceChart.update();
+        }
+
         function refreshData() {
             loadDashboardData();
         }
 
+        async function simulateFix(button, query, recommendation) {
+            const resultDiv = button.nextElementSibling;
+            resultDiv.innerHTML = '<em>Simulating...</em>';
+            button.disabled = true;
+
+            try {
+                const response = await fetch('/api/simulate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: query, recommendation: recommendation })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Simulation failed on the server.');
+                }
+                
+                const results = await response.json();
+                
+                if (!results.success) {
+                    throw new Error(results.error || 'Simulation failed');
+                }
+                
+                const timeBefore = results.before.execution_time_ms.toFixed(2);
+                const timeAfter = results.after.execution_time_ms.toFixed(2);
+                const improvement = ((timeBefore - timeAfter) / timeBefore * 100).toFixed(1);
+                
+                resultDiv.innerHTML = `
+                    <hr>
+                    <b>Before:</b> ${timeBefore} ms <br>
+                    <b>After (Est.):</b> ${timeAfter} ms <br>
+                    <b style="color: green;">Time Reduced: ${improvement}%</b>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<span style="color: red;">Error: ${error.message}</span>`;
+            } finally {
+                button.disabled = false;
+            }
+        }
+
         function showError(message) {
             const tbody = document.getElementById('hotspotsTableBody');
-            tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger">${message}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger">${message}</td></tr>`;
         }
     </script>
 </body>

@@ -19,6 +19,10 @@ from src.analysis.regression_analysis import PerformanceRegressionAnalyzer
 from src.analysis.configuration_analysis import ConfigurationAnalyzer
 from src.analysis.schema_analysis import SchemaAnalyzer
 from src.config.database_config import get_database_config
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), 'scripts'))
+from hypopg_simulate import run_hypopg_simulation
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'db-performance-analysis-2024'
@@ -237,6 +241,38 @@ def api_query_analysis():
             'success': False,
             'error': str(e),
             'data': {}
+        }), 500
+
+@app.route('/api/simulate', methods=['POST'])
+def api_simulate():
+    """Simulate the effect of a database optimization recommendation."""
+    try:
+        data = request.get_json()
+        query = data.get('query')
+        recommendation = data.get('recommendation')
+        
+        if not query or not recommendation:
+            return jsonify({
+                'success': False,
+                'error': 'Both query and recommendation are required'
+            }), 400
+        
+        # Run the simulation
+        before_metrics, after_metrics = run_hypopg_simulation(query, recommendation)
+        
+        return jsonify({
+            'success': True,
+            'before': before_metrics,
+            'after': after_metrics,
+            'generated_at': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'before': {},
+            'after': {}
         }), 500
 
 @app.route('/api/alerts')

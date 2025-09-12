@@ -15,7 +15,7 @@ from typing import List, Dict, Any, Optional
 # Add project root to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.config.database_config import get_database_config
+from src.config.database_config import get_database_config, get_historical_postgres_connection_string
 
 class PerformanceTrendAnalyzer:
     """Analyzes historical performance data for trends and patterns."""
@@ -25,11 +25,8 @@ class PerformanceTrendAnalyzer:
         self.historical_db_name = historical_db_name
         self.db_config = get_database_config()
         
-        # PostgreSQL connection for historical data
-        self.historical_conn_str = self.db_config.get_postgres_connection_string().replace(
-            f"/{self.db_config.get_postgres_config()['database']}", 
-            f"/{historical_db_name}"
-        )
+        # PostgreSQL connection for historical data (robust builder)
+        self.historical_conn_str = get_historical_postgres_connection_string(historical_db_name)
     
     def get_query_performance_trends(self, hours: int = 24, limit: int = 20) -> List[Dict[str, Any]]:
         """Get query performance trends over time."""

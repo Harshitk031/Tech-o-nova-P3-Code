@@ -12,13 +12,13 @@ from datetime import datetime
 
 def test_web_application():
     """Test the web application functionality."""
-    print("🌐 Web Application Testing")
+    print("Web Application Testing")
     print("=" * 70)
     print(f"Test started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("")
     
     # Test Flask app startup
-    print("🚀 Testing Flask Application Startup")
+    print("Testing Flask Application Startup")
     print("-" * 50)
     
     try:
@@ -35,16 +35,16 @@ def test_web_application():
         try:
             response = requests.get('http://localhost:5000', timeout=10)
             if response.status_code == 200:
-                print("✅ Flask application started successfully")
+                print("Flask application started successfully")
                 print(f"   Status Code: {response.status_code}")
                 print(f"   Response Length: {len(response.text)} characters")
             else:
-                print(f"❌ Flask application returned status code: {response.status_code}")
+                print(f"Flask application returned status code: {response.status_code}")
         except requests.exceptions.RequestException as e:
             print(f"❌ Failed to connect to Flask application: {e}")
         
         # Test API endpoints
-        print("\n🔌 Testing API Endpoints")
+        print("\nTesting API Endpoints")
         print("-" * 50)
         
         api_endpoints = [
@@ -68,16 +68,16 @@ def test_web_application():
             try:
                 response = requests.get(f'http://localhost:5000{endpoint}', timeout=5)
                 if response.status_code == 200:
-                    print(f"✅ {description} - Status: {response.status_code}")
+                    print(f"PASS {description} - Status: {response.status_code}")
                     api_passed += 1
                 else:
-                    print(f"⚠️  {description} - Status: {response.status_code}")
+                    print(f"WARN {description} - Status: {response.status_code}")
                     api_passed += 1  # Count as passed since endpoint exists
             except requests.exceptions.RequestException as e:
-                print(f"❌ {description} - Error: {e}")
+                print(f"FAIL {description} - Error: {e}")
         
         # Test POST endpoint
-        print("\n📝 Testing POST Endpoint")
+        print("\nTesting POST Endpoint")
         print("-" * 50)
         
         try:
@@ -88,18 +88,18 @@ def test_web_application():
             response = requests.post('http://localhost:5000/api/query-analysis', 
                                    json=test_query, timeout=10)
             if response.status_code == 200:
-                print("✅ Query analysis API - Status: 200")
+                print("PASS Query analysis API - Status: 200")
                 api_passed += 1
             else:
-                print(f"⚠️  Query analysis API - Status: {response.status_code}")
+                print(f"WARN Query analysis API - Status: {response.status_code}")
                 api_passed += 1
         except requests.exceptions.RequestException as e:
-            print(f"❌ Query analysis API - Error: {e}")
+            print(f"FAIL Query analysis API - Error: {e}")
         
         api_total += 1
         
         # Test file structure
-        print("\n📁 Testing File Structure")
+        print("\nTesting File Structure")
         print("-" * 50)
         
         expected_files = [
@@ -117,13 +117,13 @@ def test_web_application():
         
         for file_path in expected_files:
             if os.path.exists(file_path):
-                print(f"✅ {file_path} - EXISTS")
+                print(f"PASS {file_path} - EXISTS")
                 file_passed += 1
             else:
-                print(f"❌ {file_path} - MISSING")
+                print(f"FAIL {file_path} - MISSING")
         
         # Test template rendering
-        print("\n🎨 Testing Template Rendering")
+        print("\nTesting Template Rendering")
         print("-" * 50)
         
         template_tests = [
@@ -141,31 +141,31 @@ def test_web_application():
             try:
                 response = requests.get(f'http://localhost:5000{endpoint}', timeout=5)
                 if response.status_code == 200 and template_name in response.text:
-                    print(f"✅ {template_name} - Rendered successfully")
+                    print(f"PASS {template_name} - Rendered successfully")
                     template_passed += 1
                 else:
-                    print(f"⚠️  {template_name} - Rendering issue")
+                    print(f"WARN {template_name} - Rendering issue")
                     template_passed += 1  # Count as passed since endpoint works
             except requests.exceptions.RequestException as e:
                 print(f"❌ {template_name} - Error: {e}")
         
         # Stop Flask app
-        print("\n🛑 Stopping Flask Application")
+        print("\nStopping Flask Application")
         print("-" * 50)
         
         try:
             process.terminate()
             process.wait(timeout=5)
-            print("✅ Flask application stopped successfully")
+            print("Flask application stopped successfully")
         except subprocess.TimeoutExpired:
             process.kill()
-            print("⚠️  Flask application force stopped")
+            print("Flask application force stopped")
         except Exception as e:
-            print(f"❌ Error stopping Flask application: {e}")
+            print(f"Error stopping Flask application: {e}")
         
         # Summary
         print("\n" + "=" * 70)
-        print("🌐 WEB APPLICATION TEST RESULTS")
+        print("WEB APPLICATION TEST RESULTS")
         print("=" * 70)
         
         total_tests = api_total + file_total + template_total
@@ -176,17 +176,17 @@ def test_web_application():
         print(f"Template Rendering: {template_passed}/{template_total} passed")
         print(f"Overall: {total_passed}/{total_tests} passed ({(total_passed/total_tests)*100:.1f}%)")
         
-        print("\n📋 WEB APPLICATION FEATURES:")
-        print("1. ✅ Flask Web Framework - Modern, lightweight web framework")
-        print("2. ✅ Interactive Dashboard - Real-time performance monitoring")
-        print("3. ✅ Alert System - Smart notifications for critical issues")
-        print("4. ✅ Configuration Analysis - Database configuration insights")
-        print("5. ✅ Schema Analysis - Database schema optimization")
-        print("6. ✅ RESTful API - Comprehensive API for data access")
-        print("7. ✅ Responsive Design - Mobile-friendly Bootstrap interface")
-        print("8. ✅ Real-time Updates - Auto-refreshing data and charts")
+        print("\nWEB APPLICATION FEATURES:")
+        print("1. Flask Web Framework - Modern, lightweight web framework")
+        print("2. Interactive Dashboard - Real-time performance monitoring")
+        print("3. Alert System - Smart notifications for critical issues")
+        print("4. Configuration Analysis - Database configuration insights")
+        print("5. Schema Analysis - Database schema optimization")
+        print("6. RESTful API - Comprehensive API for data access")
+        print("7. Responsive Design - Mobile-friendly Bootstrap interface")
+        print("8. Real-time Updates - Auto-refreshing data and charts")
         
-        print("\n🚀 USAGE INSTRUCTIONS:")
+        print("\nUSAGE INSTRUCTIONS:")
         print("# Start the web application")
         print("python app.py")
         print("")
@@ -202,16 +202,16 @@ def test_web_application():
         print("http://localhost:5000/api/health-check")
         
         if total_passed == total_tests:
-            print("\n🎉 ALL TESTS PASSED - Web application ready!")
+            print("\nALL TESTS PASSED - Web application ready!")
         elif total_passed >= total_tests * 0.8:
-            print("\n✅ MOSTLY SUCCESSFUL - Web application ready with minor issues")
+            print("\nMOSTLY SUCCESSFUL - Web application ready with minor issues")
         else:
-            print("\n⚠️  SOME ISSUES DETECTED - Review failed tests above")
+            print("\nSOME ISSUES DETECTED - Review failed tests above")
         
         return total_passed == total_tests
         
     except Exception as e:
-        print(f"❌ Test failed with exception: {e}")
+        print(f"Test failed with exception: {e}")
         return False
 
 def main():

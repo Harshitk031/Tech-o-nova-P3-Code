@@ -48,6 +48,24 @@ class DatabaseConfig:
         """Get MySQL connection string."""
         return self._mysql_config['connection_string']
     
+    def get_historical_postgres_connection_string(self, historical_db_name: str) -> str:
+        """Build a PostgreSQL connection string targeting the historical DB.
+
+        Uses the same host/port/password as the base config. If the detected user
+        name erroneously matches the database name (e.g., 'performance_history'),
+        default to 'postgres' to avoid auth failures in common local setups.
+        Allows optional overrides via HISTORICAL_POSTGRES_USER/PASSWORD.
+        """
+        base = self._postgres_config
+        user = os.getenv('HISTORICAL_POSTGRES_USER', base['user'])
+        # Avoid misconfigured environments where POSTGRES_USER == historical DB name
+        if user == historical_db_name:
+            user = 'postgres'
+        password = os.getenv('HISTORICAL_POSTGRES_PASSWORD', base['password'])
+        host = base['host']
+        port = base['port']
+        return f"postgresql://{user}:{password}@{host}:{port}/{historical_db_name}"
+    
     def get_postgres_config(self) -> Dict[str, str]:
         """Get PostgreSQL configuration dictionary."""
         return self._postgres_config.copy()
@@ -99,6 +117,10 @@ def get_postgres_connection_string() -> str:
 def get_mysql_connection_string() -> str:
     """Convenience function to get MySQL connection string."""
     return db_config.get_mysql_connection_string()
+
+def get_historical_postgres_connection_string(historical_db_name: str) -> str:
+    """Convenience function to get historical PostgreSQL connection string."""
+    return db_config.get_historical_postgres_connection_string(historical_db_name)
 
 def get_postgres_config() -> Dict[str, str]:
     """Convenience function to get PostgreSQL configuration."""

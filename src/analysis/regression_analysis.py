@@ -14,7 +14,7 @@ import statistics
 # Add project root to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from src.config.database_config import get_database_config
+from src.config.database_config import get_database_config, get_historical_postgres_connection_string
 
 class PerformanceRegressionAnalyzer:
     """Analyzes performance regressions in historical data."""
@@ -24,11 +24,8 @@ class PerformanceRegressionAnalyzer:
         self.historical_db_name = historical_db_name
         self.db_config = get_database_config()
         
-        # PostgreSQL connection for historical data
-        self.historical_conn_str = self.db_config.get_postgres_connection_string().replace(
-            f"/{self.db_config.get_postgres_config()['database']}", 
-            f"/{historical_db_name}"
-        )
+        # PostgreSQL connection for historical data (robust builder)
+        self.historical_conn_str = get_historical_postgres_connection_string(historical_db_name)
     
     def analyze_query_regression(self, query_id: int, days: int = 7, threshold: float = 0.5) -> Dict[str, Any]:
         """
